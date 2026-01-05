@@ -3,11 +3,29 @@
 ![Platform](https://img.shields.io/badge/platform-antiX%20Linux%2023.2-blue)
 ![Debian](https://img.shields.io/badge/debian-12%20bookworm-red)
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Init System](https://img.shields.io/badge/init-sysVinit-orange)
+![Init System](https://img.shields.io/badge/init-sysVinit%20ONLY-orange)
 ![Docker](https://img.shields.io/badge/docker-latest-2496ED?logo=docker)
 ![Maintenance](https://img.shields.io/badge/maintained-yes-brightgreen)
 
-Complete Docker installation script for antiX Linux 23.2 (and other Debian-based systems without systemd).
+Complete Docker installation script for **antiX Linux 23.2 with sysVinit** (and other Debian-based systems using sysVinit).
+
+## ⚠️ Important: sysVinit Only
+
+**This script is specifically designed for sysVinit-based systems ONLY.**
+
+- ✅ **Works with**: antiX Linux with **sysVinit** init system
+- ❌ **NOT compatible with**: antiX runit version, systemd-based systems
+
+antiX Linux comes in two init system variants:
+- **sysVinit** - ✅ Use this script
+- **runit** - ❌ Do NOT use this script (requires different init configuration)
+
+To check your init system:
+```bash
+ps -p 1 -o comm=
+# Output should be: init (for sysVinit)
+# If output is: runit or systemd - DO NOT use this script
+```
 
 ## Overview
 
@@ -34,10 +52,34 @@ This script performs a complete Docker installation on antiX Linux, which uses s
 
 ## Compatibility
 
-This script is specifically designed for:
-- antiX Linux 23.x
-- Other Debian-based distributions using sysVinit
-- Debian 12 (Bookworm) based systems without systemd
+**This script is ONLY for sysVinit-based systems:**
+
+✅ **Compatible with:**
+- antiX Linux 23.x with **sysVinit** init system
+- MX Linux with sysVinit
+- Devuan (sysVinit variant)
+- Other Debian 12 (Bookworm) based systems using sysVinit
+
+❌ **NOT compatible with:**
+- antiX Linux with **runit** init system
+- Systemd-based distributions
+- MX Linux with systemd
+
+### How to check your init system:
+
+```bash
+# Check init system
+ps -p 1 -o comm=
+
+# Expected output for compatibility:
+# init  ← sysVinit (✅ Compatible)
+
+# If you see these, DO NOT use this script:
+# runit ← runit init system (❌ Not compatible)
+# systemd ← systemd (❌ Not compatible)
+```
+
+**Note for runit users**: This script creates init scripts for `/etc/init.d/` which are sysVinit-specific. For runit-based antiX, you need different service management approach using runit's service directory structure.
 
 ## Installation
 
@@ -282,6 +324,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 - Docker Model plugin may show as optional if not fully supported
 - First container startup may be slow due to image downloads
 - Some Docker features requiring systemd may not work
+- **This script will NOT work on antiX runit version** - it requires sysVinit
 
 ## License
 
@@ -330,4 +373,3 @@ Created for the antiX Linux community to simplify Docker installation on non-sys
 ---
 
 **Note**: This script is specifically designed for antiX Linux and similar sysVinit-based systems. For systemd-based distributions, use the official Docker installation methods.
-
