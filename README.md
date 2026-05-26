@@ -51,18 +51,16 @@ This script performs a complete Docker installation on antiX Linux, which uses s
 
 ## Compatibility
 
-**This script is ONLY for sysVinit-based systems:**
+**This script is ONLY for sysVinit-based systems.**
 
-✅ **Compatible with:**
-- antiX Linux 23.x with **sysVinit** init system
-- MX Linux with sysVinit
-- Devuan (sysVinit variant)
-- Other Debian 12 (Bookworm) based systems using sysVinit
-
-❌ **NOT compatible with:**
-- antiX Linux with **runit** init system
-- Systemd-based distributions
-- MX Linux with systemd
+| Distribution | Init System | Docker Source | Status |
+|---|---|---|---|
+| antiX Linux 23.x | sysVinit | Docker Inc repo (`/usr/bin/dockerd`) | ✅ Tested |
+| Devuan 4/5+ | sysVinit (or fork) | Debian package / self-built (`/usr/sbin/dockerd`) | ✅ Tested (fixes #1) |
+| MX Linux | sysVinit | Docker Inc repo | ✅ Compatible |
+| Debian 12 Bookworm | sysVinit (if configured) | Docker Inc repo | ✅ Compatible |
+| antiX Linux 23.x | **runit** | N/A | ❌ NOT compatible |
+| Any distribution | **systemd** | Docker official method recommended | ❌ NOT compatible |
 
 ### How to check your init system:
 
@@ -356,6 +354,9 @@ Created for the antiX Linux community to simplify Docker installation on non-sys
 - **Docker Documentation**: https://docs.docker.com/
 
 ## Changelog
+
+### Version 1.1.3
+- README: compatibility table added (antiX, Devuan, MX Linux, Debian — tested/supported/not compatible)
 
 ### Version 1.1.2
 - Auto-detection of Linux distribution (antiX / Devuan / MX Linux / generic Debian) at script start
