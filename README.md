@@ -355,12 +355,6 @@ Created for the antiX Linux community to simplify Docker installation on non-sys
 
 ## Changelog
 
-### Version 1.1.4
-- Final shellcheck: zero warnings, clean syntax pass
-
-### Version 1.1.3
-- README: compatibility table added (antiX, Devuan, MX Linux, Debian — tested/supported/not compatible)
-
 ### Version 1.1.2
 - Auto-detection of Linux distribution (antiX / Devuan / MX Linux / generic Debian) at script start
 
