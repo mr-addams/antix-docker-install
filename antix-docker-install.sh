@@ -9,6 +9,20 @@ fi
 
 echo "=== COMPLETE DOCKER INSTALLATION FOR ANTIX ==="
 
+# Определение дистрибутива — antiX, Devuan, MX Linux или generic Debian
+DISTRO=""
+if [ -f /etc/antix-version ]; then
+    DISTRO="antiX"
+elif [ -f /etc/devuan-version ]; then
+    DISTRO="Devuan"
+elif command -v lsb_release >/dev/null 2>&1; then
+    DISTRO=$(lsb_release -is 2>/dev/null || echo "Debian")
+else
+    DISTRO="Debian"
+fi
+echo "Detected distribution: $DISTRO"
+echo ""
+
 # 1. Kill all Docker processes (but not this script!)
 echo "1. Stopping all Docker processes..."
 # Kill only exact Docker daemon processes, not scripts
