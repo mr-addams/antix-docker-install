@@ -7,7 +7,7 @@
 ![Docker](https://img.shields.io/badge/docker-latest-2496ED?logo=docker)
 ![Maintenance](https://img.shields.io/badge/maintained-yes-brightgreen)
 
-Complete Docker installation script for **antiX Linux 23.2 with sysVinit** (and other Debian-based systems using sysVinit).
+Complete Docker installation script for **antiX Linux, Devuan, MX Linux** and other Debian-based systems using **sysVinit**.
 
 ## ⚠️ Important: sysVinit Only
 
