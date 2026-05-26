@@ -357,6 +357,15 @@ Created for the antiX Linux community to simplify Docker installation on non-sys
 
 ## Changelog
 
+### Version 1.1.0
+- Cross-distro support: now works on antiX, Devuan, MX Linux and other Debian forks with sysVinit
+- Auto-detection of dockerd path via `command -v` with fallback chain (fixes Devuan compatibility)
+- Removed `docker-model-plugin` from default install (unnecessary AI dependencies on low-resource distros)
+- Added `set -euo pipefail` with proper error handling guards
+- Fixed error message: `docker-full-install.sh` → `antix-docker-install.sh`
+- Fixed shellcheck warnings (SC2046, SC2086)
+- Updated README: compatibility table, removed Docker Model references
+
 ### Version 1.0.0
 - Initial release
 - Full Docker CE installation support
