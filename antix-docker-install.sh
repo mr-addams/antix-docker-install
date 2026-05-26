@@ -76,7 +76,21 @@ apt-get install -y ca-certificates curl gnupg lsb-release
 # 6. Add Docker repository
 echo "6. Adding Docker repository..."
 install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+# Безопасная загрузка GPG-ключа — через временный файл с проверкой
+TEMP_KEY=$(mktemp)
+if ! curl -fsSL https://download.docker.com/linux/debian/gpg -o "$TEMP_KEY"; then
+    echo "ERROR: Failed to download Docker GPG key. Check internet connection."
+    rm -f "$TEMP_KEY"
+    exit 1
+fi
+if [ ! -s "$TEMP_KEY" ]; then
+    echo "ERROR: Downloaded GPG key is empty."
+    rm -f "$TEMP_KEY"
+    exit 1
+fi
+gpg --dearmor -o /etc/apt/keyrings/docker.gpg "$TEMP_KEY"
+rm -f "$TEMP_KEY"
 chmod a+r /etc/apt/keyrings/docker.gpg
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list
 apt-get update

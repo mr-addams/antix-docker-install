@@ -357,6 +357,9 @@ Created for the antiX Linux community to simplify Docker installation on non-sys
 
 ## Changelog
 
+### Version 1.1.1
+- Safe GPG key download: curl no longer piped directly to gpg — downloaded to temp file with verification (exit code + non-empty check)
+
 ### Version 1.1.0
 - Cross-distro support: now works on antiX, Devuan, MX Linux and other Debian forks with sysVinit
 - Auto-detection of dockerd path via `command -v` with fallback chain (fixes Devuan compatibility)
