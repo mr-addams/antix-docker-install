@@ -357,6 +357,7 @@ Created for the antiX Linux community to simplify Docker installation on non-sys
 
 ### Version 1.1.2
 - Auto-detection of Linux distribution (antiX / Devuan / MX Linux / generic Debian) at script start
+- Version number (`$SCRIPT_VERSION`) embedded in script header, shown in title banner
 
 ### Version 1.1.1
 - Safe GPG key download: curl no longer piped directly to gpg — downloaded to temp file with verification (exit code + non-empty check)

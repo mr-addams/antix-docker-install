@@ -1,13 +1,15 @@
 #!/bin/bash
 set -euo pipefail
 
+SCRIPT_VERSION="1.1.2"
+
 # Root check
 if [ "$EUID" -ne 0 ]; then 
     echo "Run as root: sudo bash antix-docker-install.sh"
     exit 1
 fi
 
-echo "=== COMPLETE DOCKER INSTALLATION FOR ANTIX ==="
+echo "=== COMPLETE DOCKER INSTALLATION FOR ANTIX (v$SCRIPT_VERSION) ==="
 
 # Определение дистрибутива — antiX, Devuan, MX Linux или generic Debian
 DISTRO=""
