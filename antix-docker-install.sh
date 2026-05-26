@@ -1,8 +1,9 @@
 #!/bin/bash
+set -euo pipefail
 
 # Root check
 if [ "$EUID" -ne 0 ]; then 
-    echo "Run as root: sudo bash docker-full-install.sh"
+    echo "Run as root: sudo bash antix-docker-install.sh"
     exit 1
 fi
 
@@ -16,8 +17,8 @@ killall -9 containerd 2>/dev/null || true
 killall -9 docker-proxy 2>/dev/null || true
 killall -9 containerd-shim 2>/dev/null || true
 # Alternative method: kill by full path
-pkill -9 -f '/usr/bin/dockerd' 2>/dev/null || true
-pkill -9 -f '/usr/bin/containerd' 2>/dev/null || true
+pkill -9 -f 'dockerd' 2>/dev/null || true
+pkill -9 -f 'containerd' 2>/dev/null || true
 sleep 3
 
 # 2. Complete cleanup
@@ -32,8 +33,8 @@ rm -f /usr/local/bin/docker-compose
 
 # Unmount all Docker filesystems before deleting
 echo "2a. Unmounting Docker filesystems..."
-umount $(mount | grep '/var/lib/docker' | awk '{print $3}' | sort -r) 2>/dev/null || true
-umount $(mount | grep '/var/lib/containerd' | awk '{print $3}' | sort -r) 2>/dev/null || true
+umount "$(mount | grep '/var/lib/docker' | awk '{print $3}' | sort -r)" 2>/dev/null || true
+umount "$(mount | grep '/var/lib/containerd' | awk '{print $3}' | sort -r)" 2>/dev/null || true
 sleep 2
 
 # Now safe to remove directories
@@ -55,11 +56,10 @@ apt-get remove -y --purge \
     containerd.io \
     docker-buildx-plugin \
     docker-compose-plugin \
-    docker-model-plugin \
     runc 2>/dev/null || true
 
-apt-get autoremove -y --purge
-apt-get autoclean
+apt-get autoremove -y --purge || true
+apt-get autoclean || true
 
 # 4. Clean repositories
 echo "4. Cleaning Docker repositories..."
@@ -67,7 +67,7 @@ rm -f /etc/apt/sources.list.d/docker.list
 rm -f /etc/apt/sources.list.d/docker.list.save
 rm -rf /etc/apt/keyrings/docker.gpg* 
 rm -rf /usr/share/keyrings/docker*
-apt-get update
+apt-get update || true
 
 # 5. Install dependencies
 echo "5. Installing dependencies..."
@@ -88,8 +88,7 @@ apt-get install -y \
     docker-ce-cli \
     containerd.io \
     docker-buildx-plugin \
-    docker-compose-plugin \
-    docker-model-plugin
+    docker-compose-plugin
 
 # 8. Create init script for antiX
 echo "8. Creating init script for antiX..."
@@ -106,7 +105,18 @@ cat > /etc/init.d/docker << 'EOF'
 ### END INIT INFO
 
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-DOCKERD=/usr/bin/dockerd
+# Автодетект пути dockerd — разные дистрибутивы кладут его в разные места
+DOCKERD=""
+for d in $(command -v dockerd 2>/dev/null || true) /usr/bin/dockerd /usr/sbin/dockerd; do
+    if [ -x "$d" ]; then
+        DOCKERD="$d"
+        break
+    fi
+done
+if [ -z "$DOCKERD" ]; then
+    echo "ERROR: dockerd not found. Is Docker installed?"
+    exit 1
+fi
 PIDFILE=/var/run/docker.pid
 SOCKET=/var/run/docker.sock
 LOGFILE=/var/log/docker.log
@@ -209,7 +219,7 @@ case "$1" in
         ;;
     status)
         if [ -f $PIDFILE ]; then
-            pid=$(cat $PIDFILE)
+            local pid=$(cat $PIDFILE)
             if kill -0 $pid 2>/dev/null; then
                 echo "docker is running (PID: $pid)"
                 exit 0
@@ -251,7 +261,7 @@ EOF
 
 # 10. Setup autostart
 echo "10. Setting up autostart..."
-update-rc.d docker defaults
+update-rc.d docker defaults || true
 
 # 11. Test init script
 echo "11. Testing init script..."
@@ -279,14 +289,6 @@ if /etc/init.d/docker start; then
             echo "--- Checking Docker Compose ---"
             if docker compose version 2>/dev/null; then
                 echo "✓ Docker Compose works"
-                
-                # Check docker model plugin
-                echo "--- Checking Docker Model Plugin ---"
-                if docker model --help 2>/dev/null | grep -q "model"; then
-                    echo "✓ Docker Model Plugin works"
-                else
-                    echo "⚠ Docker Model Plugin not working (this is optional)"
-                fi
                 
                 # Final test - hello-world
                 echo "--- Final test: hello-world ---"
@@ -322,7 +324,7 @@ echo "12. Setting up user permissions..."
 groupadd docker 2>/dev/null || true
 CURRENT_USER=${SUDO_USER:-$(whoami)}
 if [ "$CURRENT_USER" != "root" ]; then
-    usermod -aG docker $CURRENT_USER 2>/dev/null || true
+    usermod -aG docker "$CURRENT_USER" 2>/dev/null || true
     echo "User $CURRENT_USER added to docker group"
     echo "IMPORTANT: Log out and log back in for group permissions to take effect!"
 fi
@@ -340,7 +342,6 @@ echo ""
 echo "Verification:"
 echo "  docker ps"
 echo "  docker compose version"
-echo "  docker model --help"
 echo "  docker run hello-world"
 echo ""
 echo "Diagnostics (if problems occur):"

@@ -28,3 +28,6 @@ tests/
 tmp/
 temp/
 *.tmp
+
+# OpenCode session data (architect decisions, flow state, agent config)
+.opencode/

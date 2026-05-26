@@ -38,7 +38,6 @@ This script performs a complete Docker installation on antiX Linux, which uses s
 - ✅ Custom init script for sysVinit systems
 - ✅ Automatic service configuration and autostart setup
 - ✅ Docker Compose plugin included
-- ✅ Docker Model plugin included
 - ✅ Docker Buildx plugin included
 - ✅ Comprehensive installation verification
 - ✅ User permission configuration
@@ -130,9 +129,8 @@ sudo ./antix-docker-install.sh
      - docker-ce
      - docker-ce-cli
      - containerd.io
-     - docker-buildx-plugin
-     - docker-compose-plugin
-     - docker-model-plugin
+      - docker-buildx-plugin
+      - docker-compose-plugin
 
 ### 3. **System Configuration**
    - Creates custom init script for sysVinit
@@ -175,9 +173,6 @@ docker --version
 
 # Check Docker Compose
 docker compose version
-
-# Check Docker Model plugin
-docker model --help
 
 # Run test container
 docker run hello-world
@@ -293,7 +288,7 @@ sudo /etc/init.d/docker stop
 
 # Remove packages
 sudo apt-get remove --purge docker-ce docker-ce-cli containerd.io \
-  docker-buildx-plugin docker-compose-plugin docker-model-plugin
+  docker-buildx-plugin docker-compose-plugin
 
 # Remove data and configuration
 sudo rm -rf /var/lib/docker
@@ -321,7 +316,6 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Known Issues
 
-- Docker Model plugin may show as optional if not fully supported
 - First container startup may be slow due to image downloads
 - Some Docker features requiring systemd may not work
 - **This script will NOT work on antiX runit version** - it requires sysVinit
