@@ -13,6 +13,7 @@ echo "=== COMPLETE DOCKER INSTALLATION FOR ANTIX (v$SCRIPT_VERSION) ==="
 
 # Определение дистрибутива — antiX, Devuan, MX Linux или generic Debian
 DISTRO=""
+CODENAME=""
 if [ -f /etc/antix-version ]; then
     DISTRO="antiX"
 elif [ -f /etc/devuan-version ]; then
@@ -23,6 +24,19 @@ else
     DISTRO="Debian"
 fi
 echo "Detected distribution: $DISTRO"
+
+# Маппинг Devuan/antiX кодименов на Debian (Docker repo использует только Debian-кодимены)
+# antiX и Devuan используют одинаковые кодимены
+RAW_CODENAME=$(lsb_release -cs 2>/dev/null || echo "unknown")
+case "$RAW_CODENAME" in
+    excalibur)        CODENAME="bookworm"  ;;  # Devuan 5 / antiX 23 → Debian 12
+    daedalus)         CODENAME="bullseye"  ;;  # Devuan 4 / antiX 22 → Debian 11
+    beowulf)          CODENAME="buster"    ;;  # Devuan 3 / antiX 19 → Debian 10
+    ascii)            CODENAME="stretch"   ;;  # Devuan 2 / antiX 17 → Debian 9
+    jessie)           CODENAME="jessie"    ;;  # Devuan 1 / antiX 16 → Debian 8 (совпадает)
+    *)                CODENAME="$RAW_CODENAME" ;;  # Всё остальное — передаём как есть (Debian, Ubuntu)
+esac
+echo "Detected codename: $RAW_CODENAME → Debian mapping: $CODENAME"
 echo ""
 
 # 1. Kill all Docker processes (but not this script!)
@@ -108,7 +122,7 @@ fi
 gpg --dearmor -o /etc/apt/keyrings/docker.gpg "$TEMP_KEY"
 rm -f "$TEMP_KEY"
 chmod a+r /etc/apt/keyrings/docker.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $CODENAME stable" > /etc/apt/sources.list.d/docker.list
 apt-get update
 
 # 7. Install Docker with all plugins
