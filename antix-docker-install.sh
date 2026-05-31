@@ -36,6 +36,10 @@ case "$RAW_CODENAME" in
     jessie)           CODENAME="jessie"    ;;  # Devuan 1 / antiX 16 → Debian 8 (совпадает)
     *)                CODENAME="$RAW_CODENAME" ;;  # Всё остальное — передаём как есть (Debian, Ubuntu)
 esac
+if [ "$CODENAME" = "unknown" ]; then
+    echo "WARNING: Could not detect Debian codename. Falling back to bookworm."
+    CODENAME="bookworm"
+fi
 echo "Detected codename: $RAW_CODENAME → Debian mapping: $CODENAME"
 echo ""
 
@@ -47,8 +51,8 @@ killall -9 containerd 2>/dev/null || true
 killall -9 docker-proxy 2>/dev/null || true
 killall -9 containerd-shim 2>/dev/null || true
 # Alternative method: kill by full path
-pkill -9 -f 'dockerd' 2>/dev/null || true
-pkill -9 -f 'containerd' 2>/dev/null || true
+pkill -9 dockerd 2>/dev/null || true
+pkill -9 containerd 2>/dev/null || true
 sleep 3
 
 # 2. Complete cleanup
@@ -63,8 +67,8 @@ rm -f /usr/local/bin/docker-compose
 
 # Unmount all Docker filesystems before deleting
 echo "2a. Unmounting Docker filesystems..."
-umount "$(mount | grep '/var/lib/docker' | awk '{print $3}' | sort -r)" 2>/dev/null || true
-umount "$(mount | grep '/var/lib/containerd' | awk '{print $3}' | sort -r)" 2>/dev/null || true
+mount | grep '/var/lib/docker' | awk '{print $3}' | sort -r | xargs -r umount 2>/dev/null || true
+mount | grep '/var/lib/containerd' | awk '{print $3}' | sort -r | xargs -r umount 2>/dev/null || true
 sleep 2
 
 # Now safe to remove directories
@@ -108,7 +112,7 @@ echo "6. Adding Docker repository..."
 install -m 0755 -d /etc/apt/keyrings
 
 # Безопасная загрузка GPG-ключа — через временный файл с проверкой
-TEMP_KEY=$(mktemp)
+TEMP_KEY=$(mktemp /tmp/docker-key.XXXXXX)
 if ! curl -fsSL https://download.docker.com/linux/debian/gpg -o "$TEMP_KEY"; then
     echo "ERROR: Failed to download Docker GPG key. Check internet connection."
     rm -f "$TEMP_KEY"
@@ -138,7 +142,7 @@ apt-get install -y \
 echo "8. Creating init script for antiX..."
 
 cat > /etc/init.d/docker << 'EOF'
-#!/bin/sh
+#!/bin/bash
 ### BEGIN INIT INFO
 # Provides:          docker
 # Required-Start:    $local_fs $remote_fs
@@ -150,13 +154,12 @@ cat > /etc/init.d/docker << 'EOF'
 
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 # Автодетект пути dockerd — разные дистрибутивы кладут его в разные места
-DOCKERD=""
-for d in $(command -v dockerd 2>/dev/null || true) /usr/bin/dockerd /usr/sbin/dockerd; do
-    if [ -x "$d" ]; then
-        DOCKERD="$d"
-        break
-    fi
-done
+DOCKERD=$(command -v dockerd 2>/dev/null) || true
+if [ -z "$DOCKERD" ]; then
+    for d in /usr/bin/dockerd /usr/sbin/dockerd; do
+        [ -x "$d" ] && { DOCKERD="$d"; break; }
+    done
+fi
 if [ -z "$DOCKERD" ]; then
     echo "ERROR: dockerd not found. Is Docker installed?"
     exit 1
@@ -171,12 +174,12 @@ start() {
     # FULL cleanup before start
     killall -9 dockerd 2>/dev/null || true
     killall -9 containerd-shim 2>/dev/null || true
-    pkill -9 -f '/usr/bin/dockerd' 2>/dev/null || true
+    pkill -9 '/usr/bin/dockerd' 2>/dev/null || true
     sleep 2
     
     # Remove old files
-    rm -f $SOCKET 2>/dev/null
-    rm -f $PIDFILE 2>/dev/null
+    rm -f "$SOCKET" 2>/dev/null
+    rm -f "$PIDFILE" 2>/dev/null
     
     # Check if somehow still running
     if pgrep -x dockerd > /dev/null; then
@@ -185,14 +188,15 @@ start() {
     fi
     
     # Start dockerd with --pidfile option so IT manages the PID file
-    nohup $DOCKERD --pidfile=$PIDFILE >> $LOGFILE 2>&1 &
+    nohup "$DOCKERD" --pidfile="$PIDFILE" >> "$LOGFILE" 2>&1 &
     
     # Wait for PID file creation (dockerd creates it)
     local count=0
     while [ $count -lt 30 ]; do
-        if [ -f $PIDFILE ] && [ -S $SOCKET ]; then
-            local pid=$(cat $PIDFILE)
-            if kill -0 $pid 2>/dev/null; then
+        if [ -f "$PIDFILE" ] && [ -S "$SOCKET" ]; then
+            local pid
+            pid=$(cat "$PIDFILE")
+            if kill -0 "$pid" 2>/dev/null; then
                 echo "done (PID: $pid)."
                 return 0
             fi
@@ -204,22 +208,23 @@ start() {
     
     echo "failed!"
     echo "=== Last 30 lines of log ==="
-    tail -30 $LOGFILE 2>/dev/null || echo "No log file"
+    tail -30 "$LOGFILE" 2>/dev/null || echo "No log file"
     return 1
 }
 
 stop() {
     echo -n "Stopping Docker daemon: "
     
-    if [ -f $PIDFILE ]; then
-        local pid=$(cat $PIDFILE)
-        if kill -0 $pid 2>/dev/null; then
-            kill $pid 2>/dev/null
+    if [ -f "$PIDFILE" ]; then
+        local pid
+        pid=$(cat "$PIDFILE")
+        if kill -0 "$pid" 2>/dev/null; then
+            kill "$pid" 2>/dev/null
             
             # Wait for termination (up to 10 seconds)
             local count=0
             while [ $count -lt 10 ]; do
-                if ! kill -0 $pid 2>/dev/null; then
+                if ! kill -0 "$pid" 2>/dev/null; then
                     break
                 fi
                 sleep 1
@@ -227,8 +232,8 @@ stop() {
             done
             
             # If still alive - force kill
-            if kill -0 $pid 2>/dev/null; then
-                kill -9 $pid 2>/dev/null
+            if kill -0 "$pid" 2>/dev/null; then
+                kill -9 "$pid" 2>/dev/null
                 sleep 2
             fi
         fi
@@ -237,14 +242,14 @@ stop() {
     # Additional cleanup - kill ALL dockerd processes
     killall -9 dockerd 2>/dev/null || true
     killall -9 containerd-shim 2>/dev/null || true
-    pkill -9 -f '/usr/bin/dockerd' 2>/dev/null || true
+    pkill -9 '/usr/bin/dockerd' 2>/dev/null || true
     
     # Wait for processes to fully terminate
     sleep 2
     
     # Clean up files
-    rm -f $SOCKET 2>/dev/null
-    rm -f $PIDFILE 2>/dev/null
+    rm -f "$SOCKET" 2>/dev/null
+    rm -f "$PIDFILE" 2>/dev/null
     
     echo "done."
 }
@@ -262,9 +267,10 @@ case "$1" in
         start
         ;;
     status)
-        if [ -f $PIDFILE ]; then
-            local pid=$(cat $PIDFILE)
-            if kill -0 $pid 2>/dev/null; then
+        if [ -f "$PIDFILE" ]; then
+            local pid
+            pid=$(cat "$PIDFILE")
+            if kill -0 "$pid" 2>/dev/null; then
                 echo "docker is running (PID: $pid)"
                 exit 0
             else
