@@ -29,8 +29,9 @@ echo "Detected distribution: $DISTRO"
 # antiX и Devuan используют одинаковые кодимены
 RAW_CODENAME=$(lsb_release -cs 2>/dev/null || echo "unknown")
 case "$RAW_CODENAME" in
-    excalibur)        CODENAME="bookworm"  ;;  # Devuan 5 / antiX 23 → Debian 12
-    daedalus)         CODENAME="bullseye"  ;;  # Devuan 4 / antiX 22 → Debian 11
+    excalibur)        CODENAME="trixie"    ;;  # Devuan 6 / antiX 24 → Debian 13
+    daedalus)         CODENAME="bookworm"  ;;  # Devuan 5 / antiX 23 → Debian 12
+    chimaera)         CODENAME="bullseye"  ;;  # Devuan 4 / antiX 22 → Debian 11
     beowulf)          CODENAME="buster"    ;;  # Devuan 3 / antiX 19 → Debian 10
     ascii)            CODENAME="stretch"   ;;  # Devuan 2 / antiX 17 → Debian 9
     jessie)           CODENAME="jessie"    ;;  # Devuan 1 / antiX 16 → Debian 8 (совпадает)
